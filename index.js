@@ -25,7 +25,8 @@ async function run() {
 
         const db = client.db('LegalEase');
         const userCollection = db.collection('user')
-        const commentsCollection = db.collection('comments')
+        const commentsCollection = db.collection('comments');
+        const lawyerProfileCollection = db.collection('lawyerProfiles')
 
         app.get('/api/users', async(req, res,)=>{
 
@@ -33,6 +34,14 @@ async function run() {
 
         app.post('/api/comments', async(req, res)=>{
             
+        })
+
+        // lawyer related api
+        app.post('/api/lawyer', async(req, res)=>{
+            const profileData = req.body;
+            console.log('profile Data: ', profileData);
+            const result = await lawyerProfileCollection.insertOne(profileData);
+            res.send(result)
         })
 
         // Send a ping to confirm a successful connection
