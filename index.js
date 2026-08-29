@@ -37,11 +37,21 @@ async function run() {
         })
 
         // lawyer related api
+        app.get('/api/lawyer/:id', async(req, res)=>{
+            const id = req.params.id;
+            const result = await lawyerProfileCollection.findOne({userId:id})
+            console.log('user id:', result);
+            res.send(result);
+            
+        })
+
         app.post('/api/lawyer', async(req, res)=>{
+
             const profileData = req.body;
             console.log('profile Data: ', profileData);
             const result = await lawyerProfileCollection.insertOne(profileData);
-            res.send(result)
+            console.log('result,', result);
+            res.send(result || {})
         })
 
         // Send a ping to confirm a successful connection
@@ -49,7 +59,7 @@ async function run() {
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     } finally {
-        await client.close();
+        // await client.close();
     }
 }
 run().catch(console.dir);
