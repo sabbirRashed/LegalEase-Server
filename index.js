@@ -3,7 +3,7 @@ const cors = require('cors')
 const app = express();
 require('dotenv').config()
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.MONGODB_URI
 const port = process.env.PORT || 5000;
 
@@ -28,30 +28,52 @@ async function run() {
         const commentsCollection = db.collection('comments');
         const lawyerProfileCollection = db.collection('lawyerProfiles')
 
-        app.get('/api/users', async(req, res,)=>{
+        app.get('/api/users', async (req, res,) => {
 
         })
 
-        app.post('/api/comments', async(req, res)=>{
-            
+        app.post('/api/comments', async (req, res) => {
+
         })
 
         // lawyer related api
-        app.get('/api/lawyer/:id', async(req, res)=>{
-            const id = req.params.id;
-            const result = await lawyerProfileCollection.findOne({userId:id})
-            console.log('user id:', result);
-            res.send(result);
-            
+        app.get('/api/lawyer/myprofile', async (req, res) => {
+
+            const query = {}
+            console.log(req.query.userId);
+
+            if (req.query.userId) {
+                query.userId = req.query.userId
+            }
+
+            const result = await lawyerProfileCollection.findOne(query)
+            console.log("result: ", result);;
+            res.send(result || {})
+
         })
 
-        app.post('/api/lawyer', async(req, res)=>{
+        app.post('/api/lawyer', async (req, res) => {
 
             const profileData = req.body;
             console.log('profile Data: ', profileData);
             const result = await lawyerProfileCollection.insertOne(profileData);
             console.log('result,', result);
             res.send(result || {})
+        })
+
+        app.patch('/api/lawyer/myprofile/:id', async (req, res) => {
+            const id = req.params.id;
+            const find = {
+                _id: new ObjectId(id)
+            };
+            const newData = req.body;
+            const updatedData = {
+                $set: newData
+            }
+
+            const result = await lawyerProfileCollection.updateOne(find, updatedData)
+            res.send(result);
+
         })
 
         // Send a ping to confirm a successful connection
