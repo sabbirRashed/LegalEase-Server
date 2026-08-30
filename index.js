@@ -26,7 +26,8 @@ async function run() {
         const db = client.db('LegalEase');
         const userCollection = db.collection('user')
         const commentsCollection = db.collection('comments');
-        const lawyerProfileCollection = db.collection('lawyerProfiles')
+        const lawyerProfileCollection = db.collection('lawyerProfiles');
+        const servicesCollection = db.collection('services');
 
         app.get('/api/users', async (req, res,) => {
 
@@ -40,14 +41,12 @@ async function run() {
         app.get('/api/lawyer/myprofile', async (req, res) => {
 
             const query = {}
-            console.log(req.query.userId);
 
             if (req.query.userId) {
                 query.userId = req.query.userId
             }
 
             const result = await lawyerProfileCollection.findOne(query)
-            console.log("result: ", result);;
             res.send(result || {})
 
         })
@@ -55,25 +54,63 @@ async function run() {
         app.post('/api/lawyer', async (req, res) => {
 
             const profileData = req.body;
-            console.log('profile Data: ', profileData);
-            const result = await lawyerProfileCollection.insertOne(profileData);
-            console.log('result,', result);
+            const finalData = {
+                ...profileData,
+                createAt: new Date()
+            }
+            const result = await lawyerProfileCollection.insertOne(finalData);
             res.send(result || {})
         })
 
-        app.patch('/api/lawyer/myprofile/:id', async (req, res) => {
+        app.patch('/api/lawyer/:id', async (req, res) => {
             const id = req.params.id;
+
             const find = {
                 _id: new ObjectId(id)
             };
+
             const newData = req.body;
             const updatedData = {
                 $set: newData
             }
-
             const result = await lawyerProfileCollection.updateOne(find, updatedData)
+            console.log(find, updatedData, 'result:', result);
             res.send(result);
 
+        })
+
+
+        //services related api
+        app.get('/api/services', async (req, res) => {
+
+            console.log("Q", req.query);
+            const query = {}
+
+            if (req.query.search) {
+                query.$or = [
+                    { name: { $regex: req.query.search, $options: 'i' } },
+                    { specialization: { $regex: req.query.search, $options: 'i' } },
+                ]
+            }
+
+            if (req.query.minFee || req.query.maxFee) {
+                query.hourlyRate = {}
+
+                if (req.query.minFee) {
+                    query.hourlyRate.$gte = Number(req.query.minFee)
+                }
+                if (req.query.maxFee) {
+                    query.hourlyRate.$lte = Number(req.query.maxFee)
+                }
+            }
+            
+            if (req.query.status) {
+                query.status = req.query.status;
+            }
+            
+            const cursor = servicesCollection.find(query)
+            const result = await cursor.toArray();
+            res.send(result);
         })
 
         // Send a ping to confirm a successful connection
