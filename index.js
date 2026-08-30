@@ -83,7 +83,7 @@ async function run() {
         //services related api
         app.get('/api/services', async (req, res) => {
 
-            console.log("Q", req.query);
+  
             const query = {}
 
             if (req.query.search) {
@@ -103,13 +103,27 @@ async function run() {
                     query.hourlyRate.$lte = Number(req.query.maxFee)
                 }
             }
-            
+
             if (req.query.status) {
                 query.status = req.query.status;
             }
             
+            // Query for lawyer Id
+            
             const cursor = servicesCollection.find(query)
             const result = await cursor.toArray();
+            res.send(result);
+        })
+
+
+        app.get('/api/service/:id', async(req, res)=>{
+            const id = req.params.id;
+            const filter ={
+                _id: new ObjectId(id),
+            }
+
+            const result = await servicesCollection.findOne(filter);
+            console.log('service result: ', result);
             res.send(result);
         })
 
