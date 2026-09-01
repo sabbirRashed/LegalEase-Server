@@ -28,16 +28,52 @@ async function run() {
         const commentsCollection = db.collection('comments');
         const lawyerProfileCollection = db.collection('lawyerProfiles');
         const servicesCollection = db.collection('services');
+        const requestCollection = db.collection('hiringRequest');
 
         app.get('/api/users', async (req, res,) => {
-
+            const result = await userCollection.find().toArray();
+            res.send(result)
         })
 
         app.post('/api/comments', async (req, res) => {
 
         })
 
+
         // lawyer related api
+
+        app.get('/api/lawyer', async (req, res) => {
+            const query = {}
+
+            if (req.query.search) {
+                query.$or = [
+                    { name: { $regex: req.query.search, $options: 'i' } },
+                    { specialization: { $regex: req.query.search, $options: 'i' } },
+                ]
+            }
+
+            if (req.query.minFee || req.query.maxFee) {
+                query.hourlyRate = {}
+
+                if (req.query.minFee) {
+                    query.hourlyRate.$gte = Number(req.query.minFee)
+                }
+                if (req.query.maxFee) {
+                    query.hourlyRate.$lte = Number(req.query.maxFee)
+                }
+            }
+
+            if (req.query.status) {
+                query.status = req.query.status;
+            }
+
+            // Query for lawyer Id
+
+            const cursor = lawyerProfileCollection.find(query)
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+
         app.get('/api/lawyer/myprofile', async (req, res) => {
 
             const query = {}
@@ -80,45 +116,18 @@ async function run() {
         })
 
 
-        //services related api
+        //  SERVICE RELATED API
+        // getting multiple service
         app.get('/api/services', async (req, res) => {
 
-  
-            const query = {}
 
-            if (req.query.search) {
-                query.$or = [
-                    { name: { $regex: req.query.search, $options: 'i' } },
-                    { specialization: { $regex: req.query.search, $options: 'i' } },
-                ]
-            }
-
-            if (req.query.minFee || req.query.maxFee) {
-                query.hourlyRate = {}
-
-                if (req.query.minFee) {
-                    query.hourlyRate.$gte = Number(req.query.minFee)
-                }
-                if (req.query.maxFee) {
-                    query.hourlyRate.$lte = Number(req.query.maxFee)
-                }
-            }
-
-            if (req.query.status) {
-                query.status = req.query.status;
-            }
-            
-            // Query for lawyer Id
-            
-            const cursor = servicesCollection.find(query)
-            const result = await cursor.toArray();
-            res.send(result);
         })
 
 
-        app.get('/api/service/:id', async(req, res)=>{
+        // getting service by serviceId
+        app.get('/api/service/:id', async (req, res) => {
             const id = req.params.id;
-            const filter ={
+            const filter = {
                 _id: new ObjectId(id),
             }
 
@@ -126,6 +135,20 @@ async function run() {
             console.log('service result: ', result);
             res.send(result);
         })
+
+        // Hiring Request Related API
+        app.get('/api/request/:lawyerId', async (req, res) => {
+            const id = req.params.lawyerId;
+            const filter = {
+                _id: new ObjectId(id),
+            }
+
+            const cursor = requestCollection.find(filter);
+            const result = await cursor.toArray();
+            res.send(result)
+        })
+
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
