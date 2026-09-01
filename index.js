@@ -88,7 +88,6 @@ async function run() {
             }
 
             const result = await lawyerProfileCollection.findOne(filter);
-            console.log('service result: ', result);
             res.send(result);
         })
 
@@ -175,7 +174,7 @@ async function run() {
         app.get('/api/request/:lawyerId', async (req, res) => {
             const id = req.params.lawyerId;
             const filter = {
-                _id: new ObjectId(id),
+                lawyerProfileId: new ObjectId(id),
             }
 
             const cursor = requestCollection.find(filter);
@@ -186,11 +185,23 @@ async function run() {
         app.post("/api/request", async(req, res)=>{
 
             const requestData = req.body;
-            const result = await requestCollection.insertOne();
+            const result = await requestCollection.insertOne(requestData);
             console.log('request: ', result);
             res.send(result)
         })
 
+
+        // COMMENT RELATED API
+        app.post('/api/comment', async(req, res)=>{
+            const commentData = req.body;
+
+            const finalData = {
+                ...commentData,
+                createAt: new Date(),
+            }
+            const result = await commentsCollection.insertOne(finalData);
+            res.send(result);
+        })
 
 
         // Send a ping to confirm a successful connection
