@@ -123,11 +123,9 @@ async function run() {
 
         //  SERVICE RELATED API
         app.get('/api/service/:profileId', async (req, res) => {
-        
-            const profileId = req.params.profileId;
 
+            const profileId = req.params.profileId;
             const result = await servicesCollection.find({profileId: profileId}).toArray();
-            console.log('services: ', result);
             res.send(result);
         })
 
@@ -140,8 +138,17 @@ async function run() {
             };
 
             const result = await servicesCollection.insertOne(serviceData)
-            console.log('postedService:', result);
             res.send(result || {});
+        })
+
+        app.patch("/api/service/:id", async(req, res)=>{
+            const id = req.params.id;
+            const filter ={
+                _id: new ObjectId(id)
+            };
+            const result = await servicesCollection.updateOne(filter);
+            console.log('service', result);
+            res.send(result);
         })
 
 
