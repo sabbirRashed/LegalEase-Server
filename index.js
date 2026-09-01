@@ -183,6 +183,14 @@ async function run() {
             res.send(result)
         })
 
+        app.post("/api/request", async(req, res)=>{
+
+            const requestData = req.body;
+            const result = await requestCollection.insertOne();
+            console.log('request: ', result);
+            res.send(result)
+        })
+
 
 
         // Send a ping to confirm a successful connection
