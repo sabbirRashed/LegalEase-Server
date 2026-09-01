@@ -130,8 +130,21 @@ async function run() {
             };
 
             const result = await servicesCollection.find(filter).toArray();
-            console.log('services: ', result);
+            // console.log('services: ', result);
             res.send(result);
+        })
+
+        app.post('/api/service', async(req, res)=>{
+            const data = req.body;
+
+            const serviceData = {
+                ...data,
+                createAt: new Date()
+            };
+
+            const result = await servicesCollection.insertOne(serviceData)
+            console.log('postedService:', result);
+            res.send(result || {});
         })
 
 
