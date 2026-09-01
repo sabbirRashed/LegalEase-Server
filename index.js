@@ -24,16 +24,11 @@ async function run() {
         await client.connect();
 
         const db = client.db('LegalEase');
-        const userCollection = db.collection('user')
         const commentsCollection = db.collection('comments');
         const lawyerProfileCollection = db.collection('lawyerProfiles');
         const servicesCollection = db.collection('services');
         const requestCollection = db.collection('hiringRequest');
 
-        app.get('/api/users', async (req, res,) => {
-            const result = await userCollection.find().toArray();
-            res.send(result)
-        })
 
         app.post('/api/comments', async (req, res) => {
 
@@ -41,7 +36,6 @@ async function run() {
 
 
         // lawyer related api
-
         app.get('/api/lawyer', async (req, res) => {
             const query = {}
 
@@ -128,10 +122,16 @@ async function run() {
 
 
         //  SERVICE RELATED API
-        // getting multiple service
-        app.get('/api/services', async (req, res) => {
+        app.get('/api/service/:lawyerId', async (req, res) => {
 
+            const id = req.params.lawyerId;
+            const filter ={
+                _id: new ObjectId(id)
+            };
 
+            const result = await servicesCollection.find(filter).toArray();
+            console.log('services: ', result);
+            res.send(result);
         })
 
 
