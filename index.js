@@ -197,7 +197,11 @@ async function run() {
             res.send(result);
         })
 
-        
+        app.get('/api/comments/userId', async(req, res)=>{
+            const id = req.params.userId;
+            const result = await commentsCollection({clientUserId: id}).toArray();
+            res.send(result)
+        })
 
 
         app.post('/api/comment', async (req, res) => {
