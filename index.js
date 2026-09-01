@@ -122,15 +122,12 @@ async function run() {
 
 
         //  SERVICE RELATED API
-        app.get('/api/service/:lawyerId', async (req, res) => {
+        app.get('/api/service/:profileId', async (req, res) => {
+        
+            const profileId = req.params.profileId;
 
-            const id = req.params.lawyerId;
-            const filter ={
-                _id: new ObjectId(id)
-            };
-
-            const result = await servicesCollection.find(filter).toArray();
-            // console.log('services: ', result);
+            const result = await servicesCollection.find({profileId: profileId}).toArray();
+            console.log('services: ', result);
             res.send(result);
         })
 
