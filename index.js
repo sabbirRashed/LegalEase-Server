@@ -87,6 +87,17 @@ async function run() {
 
         })
 
+        app.get('/api/lawyer/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = {
+                _id: new ObjectId(id),
+            }
+
+            const result = await lawyerProfileCollection.findOne(filter);
+            console.log('service result: ', result);
+            res.send(result);
+        })
+
         app.post('/api/lawyer', async (req, res) => {
 
             const profileData = req.body;
