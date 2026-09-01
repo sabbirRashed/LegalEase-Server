@@ -143,6 +143,7 @@ async function run() {
 
         app.patch("/api/service/:id", async(req, res)=>{
             const id = req.params.id;
+
             const filter ={
                 _id: new ObjectId(id)
             };
@@ -153,9 +154,19 @@ async function run() {
                     ...updatedService
                 }
             }
+           
             const result = await servicesCollection.updateOne(filter, query);
-            console.log('service', result);
             res.send(result);
+        })
+
+        app.delete("/api/service/:id", async(req, res)=>{
+            const id = req.params.id;
+            
+            const filter = {
+                _id: new ObjectId(id)
+            }
+            const result = await servicesCollection.deleteOne(filter);
+            res.send(result)
         })
 
 
