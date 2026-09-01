@@ -192,8 +192,9 @@ async function run() {
 
 
         // COMMENT RELATED API
-        app.get('/api/comments', async (req, res) => {
-            const result = await commentsCollection.find().toArray();
+        app.get('/api/comments/:profileId', async (req, res) => {
+            const profileId = req.params.profileId;
+            const result = await commentsCollection.find({lawyerProfileId: profileId}).toArray();
             res.send(result);
         })
 
