@@ -146,23 +146,19 @@ async function run() {
             const filter ={
                 _id: new ObjectId(id)
             };
-            const result = await servicesCollection.updateOne(filter);
+            const updatedService = req.body;
+
+            const query = {
+                $set: {
+                    ...updatedService
+                }
+            }
+            const result = await servicesCollection.updateOne(filter, query);
             console.log('service', result);
             res.send(result);
         })
 
 
-        // getting service by serviceId
-        app.get('/api/service/:id', async (req, res) => {
-            const id = req.params.id;
-            const filter = {
-                _id: new ObjectId(id),
-            }
-
-            const result = await servicesCollection.findOne(filter);
-            console.log('service result: ', result);
-            res.send(result);
-        })
 
         // Hiring Request Related API
         app.get('/api/request/:lawyerId', async (req, res) => {
