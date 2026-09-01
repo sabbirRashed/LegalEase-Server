@@ -124,11 +124,11 @@ async function run() {
         app.get('/api/service/:profileId', async (req, res) => {
 
             const profileId = req.params.profileId;
-            const result = await servicesCollection.find({profileId: profileId}).toArray();
+            const result = await servicesCollection.find({ profileId: profileId }).toArray();
             res.send(result);
         })
 
-        app.post('/api/service', async(req, res)=>{
+        app.post('/api/service', async (req, res) => {
             const data = req.body;
 
             const serviceData = {
@@ -140,10 +140,10 @@ async function run() {
             res.send(result || {});
         })
 
-        app.patch("/api/service/:id", async(req, res)=>{
+        app.patch("/api/service/:id", async (req, res) => {
             const id = req.params.id;
 
-            const filter ={
+            const filter = {
                 _id: new ObjectId(id)
             };
             const updatedService = req.body;
@@ -153,14 +153,14 @@ async function run() {
                     ...updatedService
                 }
             }
-           
+
             const result = await servicesCollection.updateOne(filter, query);
             res.send(result);
         })
 
-        app.delete("/api/service/:id", async(req, res)=>{
+        app.delete("/api/service/:id", async (req, res) => {
             const id = req.params.id;
-            
+
             const filter = {
                 _id: new ObjectId(id)
             }
@@ -182,7 +182,7 @@ async function run() {
             res.send(result)
         })
 
-        app.post("/api/request", async(req, res)=>{
+        app.post("/api/request", async (req, res) => {
 
             const requestData = req.body;
             const result = await requestCollection.insertOne(requestData);
@@ -192,7 +192,15 @@ async function run() {
 
 
         // COMMENT RELATED API
-        app.post('/api/comment', async(req, res)=>{
+        app.get('/api/comments', async (req, res) => {
+            const result = await commentsCollection.find().toArray();
+            res.send(result);
+        })
+
+        
+
+
+        app.post('/api/comment', async (req, res) => {
             const commentData = req.body;
 
             const finalData = {
