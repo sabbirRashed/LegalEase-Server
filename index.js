@@ -174,7 +174,7 @@ async function run() {
         app.get('/api/request/:lawyerId', async (req, res) => {
             const id = req.params.lawyerId;
             const filter = {
-                lawyerProfileId: new ObjectId(id),
+                lawyerProfileId: id,
             }
 
             const cursor = requestCollection.find(filter);
@@ -185,8 +185,11 @@ async function run() {
         app.post("/api/request", async (req, res) => {
 
             const requestData = req.body;
-            const result = await requestCollection.insertOne(requestData);
-            console.log('request: ', result);
+            const dataWithData = {
+                ...requestData,
+                createAt: new Object()
+            }
+            const result = await requestCollection.insertOne(dataWithData);
             res.send(result)
         })
 
