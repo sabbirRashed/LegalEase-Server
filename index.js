@@ -171,6 +171,16 @@ async function run() {
 
 
         // Hiring Request Related API
+        app.get('/api/request/:clientId', async (req, res) => {
+            const id = req.params.lawyerId;
+            const filter = {
+                clientUserId: id,
+            }
+            const cursor = requestCollection.find(filter);
+            const result = await cursor.toArray();
+            res.send(result)
+        })
+
         app.get('/api/request/:lawyerId', async (req, res) => {
             const id = req.params.lawyerId;
             const filter = {
@@ -193,7 +203,7 @@ async function run() {
             res.send(result)
         })
 
-        app.patch('/api/request/:id', async(req, res)=>{
+        app.patch('/api/request/:id', async (req, res) => {
             const id = req.params.id;
             const updatedData = req.body;
 
@@ -201,12 +211,14 @@ async function run() {
                 _id: new ObjectId(id)
             }
 
-            const query= {
+            const query = {
                 $set: {
                     status: updatedData?.status
                 }
             }
-            const result =await requestCollection.updateOne(filter, query);
+
+            console.log('filter:', filter, "data:", query);
+            const result = await requestCollection.updateOne(filter, query);
             console.log('up sta', result)
             res.send(result);
 
@@ -216,13 +228,13 @@ async function run() {
         // COMMENT RELATED API
         app.get('/api/comments/:profileId', async (req, res) => {
             const profileId = req.params.profileId;
-            const result = await commentsCollection.find({lawyerProfileId: profileId}).toArray();
+            const result = await commentsCollection.find({ lawyerProfileId: profileId }).toArray();
             res.send(result);
         })
 
-        app.get('/api/comments/userId', async(req, res)=>{
+        app.get('/api/comments/userId', async (req, res) => {
             const id = req.params.userId;
-            const result = await commentsCollection({clientUserId: id}).toArray();
+            const result = await commentsCollection({ clientUserId: id }).toArray();
             res.send(result)
         })
 
