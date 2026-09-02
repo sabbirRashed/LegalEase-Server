@@ -187,10 +187,29 @@ async function run() {
             const requestData = req.body;
             const dataWithData = {
                 ...requestData,
-                createAt: new Object()
+                createAt: new Date(),
             }
             const result = await requestCollection.insertOne(dataWithData);
             res.send(result)
+        })
+
+        app.patch('/api/request/:id', async(req, res)=>{
+            const id = req.params.id;
+            const updatedData = req.body;
+
+            const filter = {
+                _id: new ObjectId(id)
+            }
+
+            const query= {
+                $set: {
+                    status: updatedData?.status
+                }
+            }
+            const result =await requestCollection.updateOne(filter, query);
+            console.log('up sta', result)
+            res.send(result);
+
         })
 
 
