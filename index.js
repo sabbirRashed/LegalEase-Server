@@ -168,11 +168,11 @@ async function run() {
             res.send(result)
         })
 
-
-
+        
         // Hiring Request Related API
-        app.get('/api/request/:clientId', async (req, res) => {
-            const id = req.params.lawyerId;
+        app.get('/api/request/user/:clientId', async (req, res) => {
+            const id = req.params.clientId;
+            console.log('client-id:', id);
             const filter = {
                 clientUserId: id,
             }
@@ -216,10 +216,7 @@ async function run() {
                     status: updatedData?.status
                 }
             }
-
-            console.log('filter:', filter, "data:", query);
             const result = await requestCollection.updateOne(filter, query);
-            console.log('up sta', result)
             res.send(result);
 
         })
