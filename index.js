@@ -28,11 +28,8 @@ async function run() {
         const lawyerProfileCollection = db.collection('lawyerProfiles');
         const servicesCollection = db.collection('services');
         const requestCollection = db.collection('hiringRequest');
+        const transactionCollection = db.collection('transaction');
 
-
-        app.post('/api/comments', async (req, res) => {
-
-        })
 
 
         // lawyer related api
@@ -64,19 +61,19 @@ async function run() {
             if (req.query.page) {
                 const page = req.query.page
                 const perPage = req.query.perPage || 12;
-                const skipProfile = (page - 1)* perPage;
+                const skipProfile = (page - 1) * perPage;
 
                 const total = await lawyerProfileCollection.countDocuments(query)
 
                 const cursor = lawyerProfileCollection.find(query).skip(skipProfile).limit(perPage);
                 const profiles = await cursor.toArray();
-               return res.send({total, profiles});
-                
+                return res.send({ total, profiles });
+
             }
 
             const cursor = lawyerProfileCollection.find(query)
-            const result = await cursor.toArray();
-            res.send(result);
+            const profiles = await cursor.toArray();
+            res.send({ profiles });
         })
 
         app.get('/api/lawyer/myprofile', async (req, res) => {
@@ -183,7 +180,6 @@ async function run() {
         // Hiring Request Related API
         app.get('/api/request/user/:clientId', async (req, res) => {
             const id = req.params.clientId;
-            console.log('client-id:', id);
             const filter = {
                 clientUserId: id,
             }
@@ -201,6 +197,17 @@ async function run() {
             const cursor = requestCollection.find(filter);
             const result = await cursor.toArray();
             res.send(result)
+        })
+
+        app.get('/api/request/requestid/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = {
+                _id: new ObjectId(id)
+            }
+            const result = await requestCollection.findOne(filter);
+            console.log('id req:', result);
+            res.send(result);
+
         })
 
         app.post("/api/request", async (req, res) => {
@@ -230,6 +237,14 @@ async function run() {
             const result = await requestCollection.updateOne(filter, query);
             res.send(result);
 
+        })
+
+
+        // TRANSACTION RELATED API
+        app.post('/api/transaction', async(req, res)=>{
+            const result = await transactionCollection.insertOne();
+            console.log("transaction res", result);
+            res.send(result);
         })
 
 
