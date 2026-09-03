@@ -61,7 +61,18 @@ async function run() {
                 query.status = req.query.status;
             }
 
-            // Query for lawyer Id
+            if (req.query.page) {
+                const page = req.query.page
+                const perPage = req.query.perPage || 12;
+                const skipProfile = (page - 1)* perPage;
+
+                const total = await lawyerProfileCollection.countDocuments(query)
+
+                const cursor = lawyerProfileCollection.find(query).skip(skipProfile).limit(perPage);
+                const profiles = await cursor.toArray();
+               return res.send({total, profiles});
+                
+            }
 
             const cursor = lawyerProfileCollection.find(query)
             const result = await cursor.toArray();
@@ -266,14 +277,13 @@ async function run() {
         })
 
 
-        app.delete("/api/comment/:id", async(req, res)=>{
+        app.delete("/api/comment/:id", async (req, res) => {
             const id = req.params.id;
-            const filter ={
+            const filter = {
                 _id: new ObjectId(id),
             }
 
-            const res = await commentsCollection.deleteOne(filter);
-            console.log('dle com:', res);
+            const result = await commentsCollection.deleteOne(filter);
             res.send(result);
         })
 
