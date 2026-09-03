@@ -168,7 +168,7 @@ async function run() {
             res.send(result)
         })
 
-        
+
         // Hiring Request Related API
         app.get('/api/request/user/:clientId', async (req, res) => {
             const id = req.params.clientId;
@@ -229,9 +229,9 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/api/comments/userId', async (req, res) => {
+        app.get('/api/comments/user/:userId', async (req, res) => {
             const id = req.params.userId;
-            const result = await commentsCollection({ clientUserId: id }).toArray();
+            const result = await commentsCollection.find({ clientUserId: id }).toArray();
             res.send(result)
         })
 
@@ -245,6 +245,24 @@ async function run() {
             }
             const result = await commentsCollection.insertOne(finalData);
             res.send(result);
+        })
+
+        app.patch('/api/comment/:id', async(req, res)=>{
+            const id = req.params.id;
+            const filter={
+                _id: new ObjectId(id)
+            }
+            const updatedComment = req.body;
+
+            const query = {
+                $set : {
+                   comment: updatedComment?.comment
+                }
+            }
+
+            const result = await commentsCollection.updateOne(filter, query);
+            console.log('update comm:', result);
+            res.send(result)
         })
 
 
