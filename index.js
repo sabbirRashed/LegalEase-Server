@@ -247,24 +247,35 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/api/comment/:id', async(req, res)=>{
+        app.patch('/api/comment/:id', async (req, res) => {
             const id = req.params.id;
-            const filter={
+
+            const filter = {
                 _id: new ObjectId(id)
             }
             const updatedComment = req.body;
 
             const query = {
-                $set : {
-                   comment: updatedComment?.comment
+                $set: {
+                    comment: updatedComment?.comment
                 }
             }
 
             const result = await commentsCollection.updateOne(filter, query);
-            console.log('update comm:', result);
             res.send(result)
         })
 
+
+        app.delete("/api/comment/:id", async(req, res)=>{
+            const id = req.params.id;
+            const filter ={
+                _id: new ObjectId(id),
+            }
+
+            const res = await commentsCollection.deleteOne(filter);
+            console.log('dle com:', res);
+            res.send(result);
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
