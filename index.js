@@ -24,12 +24,23 @@ async function run() {
         await client.connect();
 
         const db = client.db('LegalEase');
+        const usersCollection = db.collection("user")
         const commentsCollection = db.collection('comments');
         const lawyerProfileCollection = db.collection('lawyerProfiles');
         const servicesCollection = db.collection('services');
         const requestCollection = db.collection('hiringRequest');
         const transactionCollection = db.collection('transaction');
 
+        // User related api
+        app.get("/api/users", async (req, res) => {
+
+            const totalUsers = await usersCollection.countDocuments();
+            const totalClients = await usersCollection.countDocuments({ role: "user" });
+            const totalLawyers = await usersCollection.countDocuments({ role: "lawyer" });
+            const totalAdmins = await usersCollection.countDocuments({ role: "admin" });
+            const users = await usersCollection.find().toArray();
+            res.send({totalUsers, totalClients, totalLawyers, totalAdmins, users});
+        })
 
 
         // lawyer related api
@@ -205,7 +216,6 @@ async function run() {
                 _id: new ObjectId(id)
             }
             const result = await requestCollection.findOne(filter);
-            console.log('id req:', result);
             res.send(result);
 
         })
@@ -241,9 +251,23 @@ async function run() {
 
 
         // TRANSACTION RELATED API
-        app.post('/api/transaction', async(req, res)=>{
-            const result = await transactionCollection.insertOne();
-            console.log("transaction res", result);
+        app.post('/api/transaction', async (req, res) => {
+            const data = req.body;
+
+            const dataWithTransactionId = {
+                ...data,
+                transactionId: `TXN-${Date.now()}`,
+            }
+
+            const filter = {
+                _id: new ObjectId(dataWithTransactionId?.hiringRequestId),
+            }
+            const query = {
+                $set: { paymentStatus: "Paid" }
+            }
+            const updateReq = await requestCollection.updateOne(filter, query)
+
+            const result = await transactionCollection.insertOne(dataWithTransactionId);
             res.send(result);
         })
 
