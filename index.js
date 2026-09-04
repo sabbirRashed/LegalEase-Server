@@ -42,6 +42,23 @@ async function run() {
             res.send({totalUsers, totalClients, totalLawyers, totalAdmins, users});
         })
 
+        app.patch('/api/users/:id', async (req, res)=>{
+            const userId = req.params.id;
+            const data = req.body;
+
+            const filter = {
+                _id: new ObjectId(userId)
+            }
+            const query ={
+                $set: {
+                    role: data?.role
+                }
+            }
+            const result = await usersCollection.updateOne(filter, query);
+            console.log('after update role:', result);
+            res.send(result)
+        })
+
 
         // lawyer related api
         app.get('/api/lawyer', async (req, res) => {
@@ -133,7 +150,6 @@ async function run() {
                 $set: newData
             }
             const result = await lawyerProfileCollection.updateOne(find, updatedData)
-            console.log(find, updatedData, 'result:', result);
             res.send(result);
 
         })
