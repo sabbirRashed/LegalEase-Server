@@ -47,6 +47,31 @@ const verifyToken = async (req, res, next) => {
     }
 }
 
+const verifyUser = async (req, res, next) => {
+    if (req?.user?.role !== "user") {
+        return res.status(403).send({ message: "forbidden access" });
+    }
+
+    next()
+}
+
+
+const verifyLawyer = async (req, res, next) => {
+    if (req?.user?.role !== "lawyer") {
+        return res.status(403).send({ message: "forbidden access" });
+    }
+
+    next()
+}
+
+const verifyAdmin = async (req, res, next) => {
+    if (req?.user?.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+    }
+
+    next()
+}
+
 async function run() {
     try {
         await client.connect();
@@ -60,7 +85,7 @@ async function run() {
         const transactionCollection = db.collection('transaction');
 
         // User related api
-        app.get("/api/users", verifyToken, async(req, res) => {
+        app.get("/api/users", verifyToken, verifyAdmin, async (req, res) => {
 
             const totalUsers = await usersCollection.countDocuments();
             const totalClients = await usersCollection.countDocuments({ role: "user" });
@@ -70,7 +95,7 @@ async function run() {
             res.send({ totalUsers, totalClients, totalLawyers, totalAdmins, users });
         })
 
-        app.patch('/api/user/:id', verifyToken, async (req, res) => {
+        app.patch('/api/user/:id', verifyToken, verifyAdmin, async (req, res) => {
             const userId = req.params.id;
             const data = req.body;
 
@@ -86,7 +111,7 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/api/user/:id', verifyToken, async (req, res) => {
+        app.delete('/api/user/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = {
                 _id: new ObjectId(id)
@@ -170,7 +195,7 @@ async function run() {
             res.send(result);
         })
 
-        app.post('/api/lawyer', verifyToken, async (req, res) => {
+        app.post('/api/lawyer', verifyToken, verifyLawyer, async (req, res) => {
 
             const profileData = req.body;
             const finalData = {
@@ -182,7 +207,7 @@ async function run() {
             res.send(result || {})
         })
 
-        app.patch('/api/lawyer/:id', verifyToken, async (req, res) => {
+        app.patch('/api/lawyer/:id', verifyToken, verifyLawyer, async (req, res) => {
             const id = req.params.id;
 
             const find = {
@@ -200,14 +225,14 @@ async function run() {
 
 
         //  SERVICE RELATED API
-        app.get('/api/service/:profileId', verifyToken, async (req, res) => {
+        app.get('/api/service/:profileId', verifyToken, verifyLawyer, async (req, res) => {
 
             const profileId = req.params.profileId;
             const result = await servicesCollection.find({ profileId: profileId }).toArray();
             res.send(result);
         })
 
-        app.post('/api/service', verifyToken, async (req, res) => {
+        app.post('/api/service', verifyToken, verifyLawyer, async (req, res) => {
             const data = req.body;
 
             const serviceData = {
@@ -219,7 +244,7 @@ async function run() {
             res.send(result || {});
         })
 
-        app.patch("/api/service/:id", verifyToken, async (req, res) => {
+        app.patch("/api/service/:id", verifyToken, verifyLawyer, async (req, res) => {
             const id = req.params.id;
 
             const filter = {
@@ -237,7 +262,7 @@ async function run() {
             res.send(result);
         })
 
-        app.delete("/api/service/:id", verifyToken, async (req, res) => {
+        app.delete("/api/service/:id", verifyToken, verifyLawyer, async (req, res) => {
             const id = req.params.id;
 
             const filter = {
@@ -249,7 +274,7 @@ async function run() {
 
 
         // Hiring Request Related API
-        app.get('/api/request/commentpermission', verifyToken, async (req, res) => {
+        app.get('/api/request/commentpermission', verifyToken, verifyUser, async (req, res) => {
             console.log('start permission');
             const { clientUserId, lawyerProfileId } = req.query;
 
@@ -262,7 +287,7 @@ async function run() {
             res.send(result || {})
         })
 
-        app.get('/api/request/user/:clientId', verifyToken, async (req, res) => {
+        app.get('/api/request/user/:clientId', verifyToken, verifyUser, async (req, res) => {
             const id = req.params.clientId;
             const filter = {
                 clientUserId: id,
@@ -272,7 +297,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/api/request/:lawyerId', verifyToken, async (req, res) => {
+        app.get('/api/request/:lawyerId', verifyToken, verifyLawyer, async (req, res) => {
             const id = req.params.lawyerId;
             const filter = {
                 lawyerProfileId: id,
@@ -284,7 +309,7 @@ async function run() {
         })
 
 
-        app.get('/api/request/requestid/:id', verifyToken, async (req, res) => {
+        app.get('/api/request/requestid/:id', verifyToken, verifyUser, async (req, res) => {
             const id = req.params.id;
             const filter = {
                 _id: new ObjectId(id)
@@ -294,7 +319,7 @@ async function run() {
 
         })
 
-        app.post("/api/request", verifyToken, async (req, res) => {
+        app.post("/api/request", verifyToken, verifyUser, async (req, res) => {
 
             const requestData = req.body;
             const dataWithData = {
@@ -305,7 +330,7 @@ async function run() {
             res.send(result)
         })
 
-        app.patch('/api/request/:id', verifyToken, async (req, res) => {
+        app.patch('/api/request/:id', verifyToken, verifyLawyer, async (req, res) => {
             const id = req.params.id;
             const updatedData = req.body;
 
@@ -325,7 +350,7 @@ async function run() {
 
 
         // TRANSACTION RELATED API
-        app.get('/api/transactions', verifyToken, async (req, res) => {
+        app.get('/api/transactions', verifyToken, verifyAdmin, async (req, res) => {
 
             const query = {}
             if (req.query.clientUserId) {
@@ -340,7 +365,7 @@ async function run() {
             res.send(result)
         })
 
-        app.post('/api/transaction', verifyToken, async (req, res) => {
+        app.post('/api/transaction', verifyToken, verifyUser, async (req, res) => {
             const data = req.body;
 
             const dataWithTransactionId = {
@@ -379,20 +404,20 @@ async function run() {
 
 
         // COMMENT RELATED API
-        app.get('/api/comments/:profileId', verifyToken, async (req, res) => {
+        app.get('/api/comments/:profileId', verifyToken, verifyUser, async (req, res) => {
             const profileId = req.params.profileId;
             const result = await commentsCollection.find({ lawyerProfileId: profileId }).toArray();
             res.send(result);
         })
 
-        app.get('/api/comments/user/:userId', verifyToken, async (req, res) => {
+        app.get('/api/comments/user/:userId', verifyToken, verifyUser, async (req, res) => {
             const id = req.params.userId;
             const result = await commentsCollection.find({ clientUserId: id }).toArray();
             res.send(result)
         })
 
 
-        app.post('/api/comment', verifyToken, async (req, res) => {
+        app.post('/api/comment', verifyToken, verifyUser, async (req, res) => {
             const commentData = req.body;
 
             const finalData = {
@@ -403,7 +428,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/api/comment/:id', verifyToken, async (req, res) => {
+        app.patch('/api/comment/:id', verifyToken, verifyUser, async (req, res) => {
             const id = req.params.id;
 
             const filter = {
@@ -421,7 +446,7 @@ async function run() {
             res.send(result)
         })
 
-        app.delete("/api/comment/:id", verifyToken, async (req, res) => {
+        app.delete("/api/comment/:id", verifyToken, verifyUser, async (req, res) => {
             const id = req.params.id;
             const filter = {
                 _id: new ObjectId(id),
@@ -432,7 +457,7 @@ async function run() {
         })
 
 
-        app.get('/api/admin/analytics', verifyToken, async (req, res) => {
+        app.get('/api/admin/analytics', verifyToken, verifyAdmin, async (req, res) => {
             const totalUsers = await usersCollection.countDocuments();
             const totalLawyers = await usersCollection.countDocuments({ role: "lawyer" });
             const totalHire = await requestCollection.countDocuments({ paymentStatus: "Paid" });
