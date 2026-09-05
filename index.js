@@ -140,6 +140,7 @@ async function run() {
             const profileData = req.body;
             const finalData = {
                 ...profileData,
+                hireCount: 0,
                 createAt: new Date()
             }
             const result = await lawyerProfileCollection.insertOne(finalData);
@@ -223,7 +224,6 @@ async function run() {
                 status: "Accepted"
             };
             const result = await requestCollection.findOne(query);
-            console.log('result permission', result);
             res.send(result || {})
         })
 
@@ -291,6 +291,7 @@ async function run() {
 
         // TRANSACTION RELATED API
         app.get('/api/transactions', async (req, res) => {
+            console.log('query params:', req.query);
 
             const query = {}
             if (req.query.clientUserId) {
@@ -300,12 +301,13 @@ async function run() {
                 query.lawyerProfileId = req.query.lawyerProfileId;
             }
 
+            console.log('mongo query:', query);
+
             const cursor = transactionCollection.find(query);
             const result = await cursor.toArray();
             console.log('transactions:', result);
             res.send(result)
         })
-
 
         app.post('/api/transaction', async (req, res) => {
             const data = req.body;
@@ -313,15 +315,32 @@ async function run() {
             const dataWithTransactionId = {
                 ...data,
                 transactionId: `TXN-${Date.now()}`,
+                createdAt: new Date()
             }
 
-            const filter = {
+            // filter for update doc
+            const filterReq = {
                 _id: new ObjectId(dataWithTransactionId?.hiringRequestId),
             }
-            const query = {
+            const filterProfile = {
+                _id: new ObjectId(dataWithTransactionId?.lawyerProfileId)
+            }
+
+            // set query for update
+            const queryForReq = {
                 $set: { paymentStatus: "Paid" }
             }
-            const updateReq = await requestCollection.updateOne(filter, query)
+            const queryForProfile = {
+                $inc: { hireCount: 1 }
+            }
+
+            const existingRequest = await requestCollection.findOne(filterReq);
+
+            // update
+            if (existingRequest?.paymentStatus !== "Paid") {
+                await requestCollection.updateOne(filterReq, queryForReq)
+                await lawyerProfileCollection.updateOne(filterProfile, queryForProfile)
+            }
 
             const result = await transactionCollection.insertOne(dataWithTransactionId);
             res.send(result);
@@ -371,7 +390,6 @@ async function run() {
             res.send(result)
         })
 
-
         app.delete("/api/comment/:id", async (req, res) => {
             const id = req.params.id;
             const filter = {
@@ -380,6 +398,54 @@ async function run() {
 
             const result = await commentsCollection.deleteOne(filter);
             res.send(result);
+        })
+
+
+        app.get('/api/admin/analytics', async (req, res) => {
+            const totalUsers = await usersCollection.countDocuments();
+            const totalLawyers = await usersCollection.countDocuments({ role: "lawyer" });
+            const totalHire = await requestCollection.countDocuments({ paymentStatus: "Paid" });
+            const totalRevenueResult = await transactionCollection.aggregate([
+                {
+                    $match: {
+                        paymentStatus: "Paid"
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: {
+                            $sum: { $toDouble: "$amount" }
+                        }
+                    }
+                }
+            ]).toArray();
+
+            const revenueResult = await transactionCollection.aggregate([
+                {
+                    $match: {
+                        paymentStatus: "Paid"
+                    }
+                },
+                {
+                    $group: {
+                        _id: {
+                            $month: "$createAt"
+                        },
+                        revenue: {
+                            $sum: { $toDouble: "$amount" }
+                        }
+                    }
+                },
+                {
+                    $sort: {
+                        _id: 1
+                    }
+                }
+            ]).toArray();
+            const totalRevenue = totalRevenueResult[0]?.total || 0;
+
+            res.send({ totalUsers, totalLawyers, totalHire, totalRevenue, revenueResult })
         })
 
         // Send a ping to confirm a successful connection
