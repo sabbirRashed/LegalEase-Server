@@ -4,6 +4,7 @@ const app = express();
 require('dotenv').config()
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 const uri = process.env.MONGODB_URI
 const port = process.env.PORT || 5000;
 
@@ -19,6 +20,33 @@ const client = new MongoClient(uri, {
     }
 });
 
+// middle ware JWT
+const JWKS = createRemoteJWKSet(
+    new URL(`http://localhost:3000/api/auth/jwks`)
+);
+
+
+const verifyToken = async (req, res, next) => {
+    const authHeader = req?.headers?.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'Unauthorized' });
+    }
+    const token = authHeader.split(" ")[1]
+    if (!token) {
+        return res.status(401).send({ message: 'Unauthorized' })
+    }
+
+    console.log('token', token);
+    try {
+        const { payload } = await jwtVerify(token, JWKS);
+        req.user = payload
+        next()
+    }
+    catch (error) {
+        return res.status(403).send({ message: "Forbidden" })
+    }
+}
+
 async function run() {
     try {
         await client.connect();
@@ -32,7 +60,7 @@ async function run() {
         const transactionCollection = db.collection('transaction');
 
         // User related api
-        app.get("/api/users", async (req, res) => {
+        app.get("/api/users", verifyToken, async(req, res) => {
 
             const totalUsers = await usersCollection.countDocuments();
             const totalClients = await usersCollection.countDocuments({ role: "user" });
@@ -42,7 +70,7 @@ async function run() {
             res.send({ totalUsers, totalClients, totalLawyers, totalAdmins, users });
         })
 
-        app.patch('/api/user/:id', async (req, res) => {
+        app.patch('/api/user/:id', verifyToken, async (req, res) => {
             const userId = req.params.id;
             const data = req.body;
 
@@ -58,7 +86,7 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/api/user/:id', async (req, res) => {
+        app.delete('/api/user/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = {
                 _id: new ObjectId(id)
@@ -112,7 +140,7 @@ async function run() {
             res.send({ profiles });
         })
 
-        app.get('/api/lawyer/myprofile', async (req, res) => {
+        app.get('/api/lawyer/myprofile', verifyToken, async (req, res) => {
 
             const query = {}
 
@@ -136,13 +164,13 @@ async function run() {
         })
 
         app.get('/api/toplawyers', async (req, res) => {
-            const cursor = lawyerProfileCollection.find().sort({hireCount: -1}).limit(3);
-            const result = await cursor.toArray(); 
+            const cursor = lawyerProfileCollection.find().sort({ hireCount: -1 }).limit(3);
+            const result = await cursor.toArray();
 
             res.send(result);
         })
 
-        app.post('/api/lawyer', async (req, res) => {
+        app.post('/api/lawyer', verifyToken, async (req, res) => {
 
             const profileData = req.body;
             const finalData = {
@@ -154,7 +182,7 @@ async function run() {
             res.send(result || {})
         })
 
-        app.patch('/api/lawyer/:id', async (req, res) => {
+        app.patch('/api/lawyer/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
 
             const find = {
@@ -172,14 +200,14 @@ async function run() {
 
 
         //  SERVICE RELATED API
-        app.get('/api/service/:profileId', async (req, res) => {
+        app.get('/api/service/:profileId', verifyToken, async (req, res) => {
 
             const profileId = req.params.profileId;
             const result = await servicesCollection.find({ profileId: profileId }).toArray();
             res.send(result);
         })
 
-        app.post('/api/service', async (req, res) => {
+        app.post('/api/service', verifyToken, async (req, res) => {
             const data = req.body;
 
             const serviceData = {
@@ -191,7 +219,7 @@ async function run() {
             res.send(result || {});
         })
 
-        app.patch("/api/service/:id", async (req, res) => {
+        app.patch("/api/service/:id", verifyToken, async (req, res) => {
             const id = req.params.id;
 
             const filter = {
@@ -209,7 +237,7 @@ async function run() {
             res.send(result);
         })
 
-        app.delete("/api/service/:id", async (req, res) => {
+        app.delete("/api/service/:id", verifyToken, async (req, res) => {
             const id = req.params.id;
 
             const filter = {
@@ -221,7 +249,7 @@ async function run() {
 
 
         // Hiring Request Related API
-        app.get('/api/request/commentpermission', async (req, res) => {
+        app.get('/api/request/commentpermission', verifyToken, async (req, res) => {
             console.log('start permission');
             const { clientUserId, lawyerProfileId } = req.query;
 
@@ -234,7 +262,7 @@ async function run() {
             res.send(result || {})
         })
 
-        app.get('/api/request/user/:clientId', async (req, res) => {
+        app.get('/api/request/user/:clientId', verifyToken, async (req, res) => {
             const id = req.params.clientId;
             const filter = {
                 clientUserId: id,
@@ -244,7 +272,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/api/request/:lawyerId', async (req, res) => {
+        app.get('/api/request/:lawyerId', verifyToken, async (req, res) => {
             const id = req.params.lawyerId;
             const filter = {
                 lawyerProfileId: id,
@@ -256,7 +284,7 @@ async function run() {
         })
 
 
-        app.get('/api/request/requestid/:id', async (req, res) => {
+        app.get('/api/request/requestid/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = {
                 _id: new ObjectId(id)
@@ -266,7 +294,7 @@ async function run() {
 
         })
 
-        app.post("/api/request", async (req, res) => {
+        app.post("/api/request", verifyToken, async (req, res) => {
 
             const requestData = req.body;
             const dataWithData = {
@@ -277,7 +305,7 @@ async function run() {
             res.send(result)
         })
 
-        app.patch('/api/request/:id', async (req, res) => {
+        app.patch('/api/request/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const updatedData = req.body;
 
@@ -297,8 +325,7 @@ async function run() {
 
 
         // TRANSACTION RELATED API
-        app.get('/api/transactions', async (req, res) => {
-            console.log('query params:', req.query);
+        app.get('/api/transactions', verifyToken, async (req, res) => {
 
             const query = {}
             if (req.query.clientUserId) {
@@ -308,15 +335,12 @@ async function run() {
                 query.lawyerProfileId = req.query.lawyerProfileId;
             }
 
-            console.log('mongo query:', query);
-
             const cursor = transactionCollection.find(query);
             const result = await cursor.toArray();
-            console.log('transactions:', result);
             res.send(result)
         })
 
-        app.post('/api/transaction', async (req, res) => {
+        app.post('/api/transaction', verifyToken, async (req, res) => {
             const data = req.body;
 
             const dataWithTransactionId = {
@@ -355,20 +379,20 @@ async function run() {
 
 
         // COMMENT RELATED API
-        app.get('/api/comments/:profileId', async (req, res) => {
+        app.get('/api/comments/:profileId', verifyToken, async (req, res) => {
             const profileId = req.params.profileId;
             const result = await commentsCollection.find({ lawyerProfileId: profileId }).toArray();
             res.send(result);
         })
 
-        app.get('/api/comments/user/:userId', async (req, res) => {
+        app.get('/api/comments/user/:userId', verifyToken, async (req, res) => {
             const id = req.params.userId;
             const result = await commentsCollection.find({ clientUserId: id }).toArray();
             res.send(result)
         })
 
 
-        app.post('/api/comment', async (req, res) => {
+        app.post('/api/comment', verifyToken, async (req, res) => {
             const commentData = req.body;
 
             const finalData = {
@@ -379,7 +403,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/api/comment/:id', async (req, res) => {
+        app.patch('/api/comment/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
 
             const filter = {
@@ -397,7 +421,7 @@ async function run() {
             res.send(result)
         })
 
-        app.delete("/api/comment/:id", async (req, res) => {
+        app.delete("/api/comment/:id", verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = {
                 _id: new ObjectId(id),
@@ -408,7 +432,7 @@ async function run() {
         })
 
 
-        app.get('/api/admin/analytics', async (req, res) => {
+        app.get('/api/admin/analytics', verifyToken, async (req, res) => {
             const totalUsers = await usersCollection.countDocuments();
             const totalLawyers = await usersCollection.countDocuments({ role: "lawyer" });
             const totalHire = await requestCollection.countDocuments({ paymentStatus: "Paid" });
