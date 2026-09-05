@@ -135,6 +135,13 @@ async function run() {
             res.send(result);
         })
 
+        app.get('/api/toplawyers', async (req, res) => {
+            const cursor = lawyerProfileCollection.find().sort({hireCount: -1}).limit(3);
+            const result = await cursor.toArray(); 
+
+            res.send(result);
+        })
+
         app.post('/api/lawyer', async (req, res) => {
 
             const profileData = req.body;
