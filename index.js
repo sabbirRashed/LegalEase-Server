@@ -22,7 +22,7 @@ const client = new MongoClient(uri, {
 
 // middle ware JWT
 const JWKS = createRemoteJWKSet(
-    new URL(`http://localhost:3000/api/auth/jwks`)
+    new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`)
 );
 
 
@@ -36,7 +36,6 @@ const verifyToken = async (req, res, next) => {
         return res.status(401).send({ message: 'Unauthorized' })
     }
 
-    console.log('token', token);
     try {
         const { payload } = await jwtVerify(token, JWKS);
         req.user = payload
@@ -74,7 +73,7 @@ const verifyAdmin = async (req, res, next) => {
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
 
         const db = client.db('LegalEase');
         const usersCollection = db.collection("user")
@@ -165,7 +164,7 @@ async function run() {
             res.send({ profiles });
         })
 
-        app.get('/api/lawyer/myprofile', verifyToken, async (req, res) => {
+        app.get('/api/lawyer/myprofile', verifyToken, verifyLawyer, async (req, res) => {
 
             const query = {}
 
@@ -275,7 +274,7 @@ async function run() {
 
         // Hiring Request Related API
         app.get('/api/request/commentpermission', verifyToken, verifyUser, async (req, res) => {
-            console.log('start permission');
+
             const { clientUserId, lawyerProfileId } = req.query;
 
             const query = {
@@ -404,10 +403,27 @@ async function run() {
 
 
         // COMMENT RELATED API
-        app.get('/api/comments/:profileId', verifyToken, verifyUser, async (req, res) => {
-            const profileId = req.params.profileId;
-            const result = await commentsCollection.find({ lawyerProfileId: profileId }).toArray();
-            res.send(result);
+        app.get('/api/comments/featured', async (req, res) => {
+            const comments = await commentsCollection.find().sort({ createAt: -1 }).limit(6).toArray();
+
+            const profileIds = comments.map(comment => comment?.lawyerProfileId);
+            const lawyerProfiles = await lawyerProfileCollection.find({
+                _id: {
+                    $in: profileIds.map(id => new ObjectId(id))
+                }
+            }).toArray();
+
+            const featuredComments = comments.map(comment => {
+                const lawyer = lawyerProfiles.find(lawyer => lawyer?._id.toString() === comment?.lawyerProfileId);
+
+                return {
+                    ...comment,
+                    lawyerCategory: lawyer?.specialization || "",
+                    lawyerImage: lawyer?.imageUrl || "",
+                };
+            })
+           
+            res.send(featuredComments)
         })
 
         app.get('/api/comments/user/:userId', verifyToken, verifyUser, async (req, res) => {
@@ -416,6 +432,11 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/api/comments/:profileId', async (req, res) => {
+            const profileId = req.params.profileId;
+            const result = await commentsCollection.find({ lawyerProfileId: profileId }).toArray();
+            res.send(result);
+        })
 
         app.post('/api/comment', verifyToken, verifyUser, async (req, res) => {
             const commentData = req.body;
@@ -505,7 +526,7 @@ async function run() {
         })
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     } finally {
